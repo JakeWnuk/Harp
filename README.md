@@ -2,7 +2,7 @@
  Harp
  </h1>
 
-  CLI based Network discovery tool using ARP. **Harp** is designed to enumerate private IPv4 ranges with ARP sweeps then sleep and capture ARP requests passively to gather hosts. Found hosts can optionally be searched for their FQDNs and aims to only lookup each host once. **Harp** can be ran as a listener or as a scanner with the ability to scan then passively enumerate repeatedly. Input can be read from `-i` or from `stdin` and formats include: a CIDR, list of CIDRs or a list of IPs. Output is stored within a DataFrame and is automatically loaded from the output directory as a database between runs. 
+  CLI based internal network discovery tool using passive-active ARP requests. **Harp** is designed to enumerate private IPv4 ranges with ARP sweeps then sleep and capture ARP requests passively to gather hosts. Found hosts can optionally be searched for their FQDNs and aims to only lookup each host once. **Harp** can be ran as a listener or as a scanner with the ability to scan then passively enumerate repeatedly. Input can be read from `-i` or from `stdin` and formats include: a CIDR, list of CIDRs or a list of IPs. Output is stored within a DataFrame and is automatically loaded from the output directory as a database between runs. 
 
   ## Getting Started
 
@@ -186,4 +186,4 @@ cat harp-output.csv | csvtomd
  |---|---|--|
 |IP Address|MAC Address|FQDN|
 
-#### *FQDN is only available if supress is not enabled
+#### *FQDN is only available if surpress is not enabled
