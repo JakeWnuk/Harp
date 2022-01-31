@@ -186,4 +186,4 @@ cat harp-output.csv | csvtomd
  |---|---|--|
 |IP Address|MAC Address|FQDN|
 
-#### *FQDN is only available if supress is not enabled
+#### *FQDN is only available if surpress is not enabled
