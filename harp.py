@@ -266,8 +266,12 @@ class Harp:
         if ARP in pkt and pkt[ARP].op in (1, 2):
             resp_src = pkt.sprintf("%ARP.psrc%")
             resp_dst = pkt.sprintf("%ARP.pdst%")
-            return message(f'Captured {message(resp_src, word=True)} requesting {message(resp_dst, word=True)}',
-                           stat=True)
+            
+            if pkt[ARP].op == 1:
+                return message("Captured " + message(pkt[ARP].psrc, word=True) + " requesting " + message(pkt[ARP].pdst, word=True), stat=True)
+            # these are mostly informational for the CLI the logic does not parse them
+            if pkt[ARP].op == 2:
+                return message("Captured " + message(pkt[ARP].hwsrc, word=True) + " responding " + message(pkt[ARP].psrc, word=True), stat=True)
 
 
 if __name__ == '__main__':
