@@ -86,10 +86,12 @@ Discovered total 16 hosts and 13 FQDNs.
 Starting ARP capture for 1 minutes...
 Captured 10.0.0.1 requesting 10.0.0.32
 Captured 10.0.0.32 requesting 10.0.0.1
+Captured e0:b4:64:dc:06:e9 responding 10.0.0.32
 Captured 10.0.0.32 requesting 10.0.0.3
 Captured 10.0.0.3 requesting 10.0.0.32
 Captured 10.0.0.1 requesting 10.0.0.32
 Captured 10.0.0.32 requesting 10.0.0.1
+Captured e0:b4:64:dc:06:e9 responding 10.0.0.142
 Captured 10.0.0.32 requesting 10.0.0.3
 Captured 10.0.0.3 requesting 10.0.0.32
 [22:22:27] Starting Cycle 1/2
@@ -101,11 +103,13 @@ Starting ARP capture for 1 minutes...
 Captured 10.0.0.1 requesting 10.0.0.32
 Captured 10.0.0.32 requesting 10.0.0.1
 Captured 10.0.0.154 requesting 10.0.0.107
+Captured e0:b4:64:dc:06:e9 responding 10.0.0.32
 Captured 10.0.0.154 requesting 10.0.0.214
 Captured 10.0.0.115 requesting 10.0.0.107
 Captured 10.0.0.32 requesting 10.0.0.3
 Captured 10.0.0.3 requesting 10.0.0.32
 Captured 10.0.0.134 requesting 10.0.0.1
+Captured e0:b4:64:dc:06:e9 responding 10.0.0.142
 Captured 10.0.0.1 requesting 10.0.0.32
 Captured 10.0.0.32 requesting 10.0.0.1
 Captured 10.0.0.32 requesting 10.0.0.3
@@ -123,15 +127,18 @@ Captured 0.0.0.0 requesting 10.0.0.69
 Captured 0.0.0.0 requesting 10.0.0.69
 Captured 0.0.0.0 requesting 10.0.0.69
 Captured 10.0.0.69 requesting 10.0.0.69
+Captured e0:b4:64:dc:06:e9 responding 10.0.0.32
 Captured 10.0.0.69 requesting 10.0.0.69
 Captured 10.0.0.69 requesting 10.0.0.69
 Captured 10.0.0.32 requesting 10.0.0.3
+Captured e0:b4:64:dc:06:e9 responding 10.0.0.142
 Captured 10.0.0.3 requesting 10.0.0.32
 Captured 10.0.0.1 requesting 10.0.0.32
 Captured 10.0.0.32 requesting 10.0.0.1
 Captured 10.0.0.115 requesting 10.0.0.107
 Captured 10.0.0.115 requesting 10.0.0.214
 Captured 10.0.0.154 requesting 10.0.0.107
+Captured e0:b4:64:dc:06:e9 responding 10.0.0.32
 Captured 10.0.0.154 requesting 10.0.0.214
 Captured 10.0.0.32 requesting 10.0.0.3
 Captured 10.0.0.3 requesting 10.0.0.32
