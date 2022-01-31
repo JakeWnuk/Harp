@@ -42,7 +42,7 @@ def validate_cidr(cidr_str):
     """
     cidr_regex = r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$'
     if not re.match(cidr_regex, cidr_str):
-        message(f'Input is either not a valid CIDR notation, file name or keyword: {message(str(cidr_str), word=True)}',
+        message(f'Input is either not a valid CIDR notation file name: {message(str(cidr_str), word=True)}',
                 stat=True)
         exit()
     return list(cidr_str.split(' '))
@@ -290,6 +290,9 @@ if __name__ == '__main__':
                         help="Skips all active scans and only starts the listener.")
     args = parser.parse_args()
 
+    if args.listen:
+        args.input = '10.0.0.0/24'
+
     if not sys.stdin.isatty() and str(args.input) == 'no input found':
         message('Reading from STDIN...', stat=True)
         args.input = sys.stdin
@@ -314,7 +317,7 @@ if __name__ == '__main__':
         try:
             input_var = transform_cidr(input_lst)
         except TypeError:
-            message(f'Input is either not a valid CIDR notation, file name or keyword', stat=True)
+            message(f'Input is either not a valid CIDR notation or file name.', stat=True)
             exit()
 
         MyHarp = Harp(input_var, args.suppress, args.wait, args.listen)
