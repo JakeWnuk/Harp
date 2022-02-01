@@ -39,6 +39,8 @@ def message(msg, title=False, stat=False, word=False, banner=False):
 def validate_cidr(cidr_str):
     """
     Takes a string of a CIDR and returns if it is valid
+    :param cidr_str: a str with a CIDR value
+    :return: list obj with the CIDR
     """
     cidr_regex = r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$'
     if not re.match(cidr_regex, cidr_str):
@@ -50,21 +52,21 @@ def validate_cidr(cidr_str):
 
 def transform_cidr(ip_var):
     """
-    Accepts cidr string or list of IP addresses
-    return: cidr string or list of cidrs
+    Accepts CIDR string or list of IP addresses
+    :param ip_var: either str or list containing IPs or CIDRs
+    :return: CIDR string or list of CIDRs
     """
     # convert str
     if type(ip_var) == str:
         output_lst = validate_cidr(ip_var)
-        # maybe if invalid you will start starting all private ranges?
         return output_lst
     # convert list of ips
     elif type(ip_var) == list and len(ip_var) > 1:
         nets = [ipaddress.ip_network(ip) for ip in ip_var]
         cidr = list(ipaddress.collapse_addresses(nets))
         output_lst = []
-        for i in cidr:
-            output_lst.append(format(i))
+        for itr in cidr:
+            output_lst.append(format(itr))
         return output_lst
     # convert list of cidrs
     elif type(ip_var) == list and len(ip_var) == 1:
@@ -102,6 +104,9 @@ class Harp:
     def run(self, in_var, do_suppress):
         """
         Runs an ARP scan and returns a df with live hosts
+        :param in_var: input variable either a str or list containing IPs or CIDRs
+        :param do_suppress: do not request FQDN (bool)
+        return: pd.DataFrame with only new results not in self.hosts_df
         """
         input_cidr = transform_cidr(in_var)
         try:
@@ -122,7 +127,8 @@ class Harp:
     def fqdn(self, df):
         """
         Gets the FQDN and adds it as a new col for the df
-        return: df
+        :param df: pd.DataFrame holding IP addresses
+        return: input DF with a new FQDN column
         """
         if len(df) != 0:
             df['FQDN'] = df['IP'].apply(lambda x: self.get_fqdn(x))
@@ -134,7 +140,8 @@ class Harp:
     def arp_scan(cidr_var):
         """
         Accepts CIDR string or list of CIDRs
-        return: py pd.DataFrame with live IPs and their physical addresses
+        :param cidr_var: either a str or list containing formatted CIDRs
+        :return: pd.DataFrame with live IPs and their physical addresses
         """
         hosts = pd.DataFrame(columns=['IP', 'MAC'])
         message('Starting ARP scan...', title=True)
@@ -169,7 +176,7 @@ class Harp:
     def get_fqdn(adr):
         """
         Uses socket to request FQDN of an IP
-        return: string of FQDN
+        :return: string of FQDN
         """
         try:
             fqdn = socket.getfqdn(str(adr))
@@ -183,6 +190,7 @@ class Harp:
     def print_output(self):
         """
         Prints output to CLI and file
+        :return: None
         """
         message('Writing output.', title=True)
         try:
@@ -197,6 +205,7 @@ class Harp:
     def cycle(self):
         """
         Process to run ARP scan and passive collection multiple times
+        :return: None
         """
         # run new scan and add new hosts
         new_df = self.run(self.in_var, self.suppress)
@@ -216,7 +225,9 @@ class Harp:
 
     def compare(self, df):
         """
-        Compares self.df with a new df and returns new entries
+        Compares self.host_df with a new df and returns new entries
+        :param df: pd.DataFrame to compare self.hosts_df with
+        :return: pd.DataFrame
         """
         try:
             c_df = self.hosts_df.merge(df, how='outer', on=['IP', 'MAC', 'FQDN'], indicator=True, copy=True).loc[
@@ -231,6 +242,7 @@ class Harp:
     def start_sniff(self):
         """
         Function to start ARP listener and record requests then ETL them
+        :return: pd.DataFrame
         """
         sniffed_df = pd.DataFrame(columns=['IP', 'MAC'])
         wait_flux = random.uniform(5, 30)
@@ -261,17 +273,23 @@ class Harp:
     def arp_monitor_callback(pkt):
         """
         Out of the box function for monitoring ARP
+        :param pkt: packet from scapy
+        :return: output str but packets are captured by sniff()
         """
         # add finding new stuff to df if it doesnt exist and print
         if ARP in pkt and pkt[ARP].op in (1, 2):
             resp_src = pkt.sprintf("%ARP.psrc%")
             resp_dst = pkt.sprintf("%ARP.pdst%")
-            
+
             if pkt[ARP].op == 1:
-                return message("Captured " + message(pkt[ARP].psrc, word=True) + " requesting " + message(pkt[ARP].pdst, word=True), stat=True)
+                return message("Captured " + message(pkt[ARP].psrc, word=True) + " requesting " + message(pkt[ARP].pdst,
+                                                                                                          word=True),
+                               stat=True)
             # these are mostly informational for the CLI the logic does not parse them
             if pkt[ARP].op == 2:
-                return message("Captured " + message(pkt[ARP].hwsrc, word=True) + " responding " + message(pkt[ARP].psrc, word=True), stat=True)
+                return message(
+                    "Captured " + message(pkt[ARP].hwsrc, word=True) + " responding " + message(pkt[ARP].psrc,
+                                                                                                word=True), stat=True)
 
 
 if __name__ == '__main__':
@@ -294,6 +312,7 @@ if __name__ == '__main__':
                         help="Skips all active scans and only starts the listener.")
     args = parser.parse_args()
 
+    # overwrite empty input for listener
     if args.listen:
         args.input = '10.0.0.0/24'
 
