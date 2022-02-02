@@ -44,8 +44,7 @@ def validate_cidr(cidr_str):
     """
     cidr_regex = r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$'
     if not re.match(cidr_regex, cidr_str):
-        message(f'Input is either not a valid CIDR notation file name: {message(str(cidr_str), word=True)}',
-                stat=True)
+        message(f'Input is either not a valid CIDR notation file name: {message(str(cidr_str), word=True)}', stat=True)
         exit()
     return list(cidr_str.split(' '))
 
@@ -164,24 +163,21 @@ class Harp:
         try:
             # sleep interval determined by the number of input
             sleep_interval = (self.sleep * 60) / len(cidr_var)
-            message(f'Time between subnet scans will be {message(round(sleep_interval, 2), word=True)} seconds.',
-                    stat=True)
+            message(f'Time between subnet scans will be {message(round(sleep_interval, 2), word=True)} seconds.', stat=True)
             # if its a list of CIDRs
             if type(cidr_var) == list:
                 random.shuffle(cidr_var)
                 for cidr in cidr_var:
                     resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr)), timeout=4, verbose=0)
-                    message(
-                        f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr), word=True)}',
-                        stat=True)
+                    time.sleep(0.1)
+                    message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr), word=True)}', stat=True)
                     for h in resp:
                         hosts.loc[hosts.shape[0]] = [h[1].psrc, h[1].hwsrc]
                     time.sleep(sleep_interval + random.uniform(0, 2))
             # if its a CIDR string
             elif type(cidr_var) == str:
                 resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr_var)), timeout=4, verbose=0)
-                message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr_var), word=True)}',
-                        stat=True)
+                message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr_var), word=True)}', stat=True)
                 for h in resp:
                     hosts.loc[hosts.shape[0]] = [h[1].psrc, h[1].hwsrc]
             return hosts
@@ -255,18 +251,14 @@ class Harp:
         message(f'Starting ARP capture for {message("~" + str(args.wait), word=True)} minutes...', stat=True)
         sniffer = AsyncSniffer(prn=self.arp_monitor_callback, filter="arp", store=1)
         sniffer.start()
-        # maybe here instead a try catch for ctrl + c
-        try:
-            # scan or sleep
-            if not self.listen_mode:
-                out_df = self.run(self.in_var, self.suppress)
-                self.hosts_df = pd.concat([self.hosts_df, out_df])
-                self.print_output()
-            else:
-                time.sleep((args.wait * 60) + wait_flux)
-        except KeyboardInterrupt:
-            message("CTRL + C Pressed! Ending listener...", title=True)
 
+        # scan or sleep
+        if not self.listen_mode:
+            out_df = self.run(self.in_var, self.suppress)
+            self.hosts_df = pd.concat([self.hosts_df, out_df])
+            self.print_output()
+        else:
+            time.sleep((args.wait * 60) + wait_flux)
         sniffer.stop()
         sniffed_pkt = sniffer.results
 
@@ -295,14 +287,10 @@ class Harp:
         # add finding new stuff to df if it doesnt exist and print
         if ARP in pkt and pkt[ARP].op in (1, 2):
             if pkt[ARP].op == 1:
-                return message("Captured " + message(pkt[ARP].psrc, word=True) + " requesting " + message(pkt[ARP].pdst,
-                                                                                                          word=True),
-                               stat=True)
+                return message("Captured " + message(pkt[ARP].psrc, word=True) + " requesting " + message(pkt[ARP].pdst, word=True), stat=True)
             # these are mostly informational for the CLI the logic does not parse them
             if pkt[ARP].op == 2:
-                return message(
-                    "Captured " + message(pkt[ARP].hwsrc, word=True) + " responding " + message(pkt[ARP].psrc,
-                                                                                                word=True), stat=True)
+                return message("Captured " + message(pkt[ARP].hwsrc, word=True) + " responding " + message(pkt[ARP].psrc, word=True), stat=True)
 
 
 if __name__ == '__main__':
