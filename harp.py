@@ -163,20 +163,24 @@ class Harp:
         try:
             # sleep interval determined by the number of input
             sleep_interval = (self.sleep * 60) / len(cidr_var)
-            message(f'Time between subnet scans will be {message(round(sleep_interval, 2), word=True)} seconds.', stat=True)
+            # assumes /29 will have 8 addresses - CHANGE IF YOU CHANGE NPREFIX OF REDUCE_CIDR()
+            pkt_interval = sleep_interval / (len(cidr_var) * 8)
+            message(f'Reduced input CIDRs to {message(len(cidr_var), word=True)} subnets', stat=True)
+            message(f'Switching subnet scans every {message(round(sleep_interval, 2), word=True)} seconds.', stat=True)
+            message(f'Time between packets will be {message(round(pkt_interval, 6), word=True)} seconds.', stat=True)
             # if its a list of CIDRs
             if type(cidr_var) == list:
                 random.shuffle(cidr_var)
                 for cidr in cidr_var:
-                    resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr)), timeout=4, verbose=0, inter=0.8)
+                    resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr)), timeout=4, verbose=0, inter=pkt_interval)
                     time.sleep(0.1)
                     message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr), word=True)}', stat=True)
                     for h in resp:
                         hosts.loc[hosts.shape[0]] = [h[1].psrc, h[1].hwsrc]
-                    time.sleep(sleep_interval + random.uniform(0, 2))
+                    time.sleep(random.uniform(0, 0.2))
             # if its a CIDR string
             elif type(cidr_var) == str:
-                resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr_var)), timeout=4, verbose=0, inter=0.8)
+                resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr_var)), timeout=4, verbose=0, inter=pkt_interval)
                 message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr_var), word=True)}', stat=True)
                 for h in resp:
                     hosts.loc[hosts.shape[0]] = [h[1].psrc, h[1].hwsrc]
@@ -305,7 +309,7 @@ if __name__ == '__main__':
                         help="Only performs ARP scans and ignores fetching FQDN.")
     parser.add_argument("-c", "--cycles", action="store", default=1, type=int,
                         help="Number of cycles to repeat.")
-    parser.add_argument("-w", "--wait", action="store", default=15, type=int,
+    parser.add_argument("-w", "--wait", action="store", default=30, type=int,
                         help="Minutes keep the listener open and spread scans throughout (if enabled).")
     parser.add_argument("-q", "--quiet", action="store_true", default=False,
                         help="Hides banner and only prints found IPs to CLI.")

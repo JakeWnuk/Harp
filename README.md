@@ -65,9 +65,9 @@ Do not do ARP scan but passively listen for ARP traffic and capture hosts for 30
 ```
 python3 harp.py -l -w 30
 ```
-Do ARP scan on input range while passively listening for ARP traffic aiming for 1 minute of listening and spread the scans over 1 minute then repeat 1 time.
+Do ARP scan on input range while passively listening for ARP traffic aiming for 360 minutes of listening and spread the scans over 360 minutes then repeat 1 time.
 ```
-harp.py -i 10.0.0.0/29 -w 1
+harp.py -i 10.0.0.0/24 -w 360 -c 1
  ▄ .▄ ▄▄▄· ▄▄▄   ▄▄▄·
 ██▪▐█▐█ ▀█ ▀▄ █·▐█ ▄█
 ██▀▐█▄█▀▀█ ▐▀▀▄  ██▀·
@@ -77,10 +77,12 @@ Reducing input to /29 subnets...
 Loaded output file with 1 records
 [19:24:12] Starting Cycle 1/1
 [19:24:12] Starting ARP Sniffing...
-Starting ARP capture for ~1 minutes...
+Starting ARP capture for ~360 minutes...
 Reducing input to /29 subnets...
 [19:24:12] Starting ARP scan...
-Time between subnet scans will be 60.0 seconds.
+Reduced input CIDRs to 32 subnets
+Switching subnet scans every 675.0 seconds.
+Time between packets will be 2.636719 seconds.
 Captured 10.0.0.142 requesting 10.0.0.0
 Captured 10.0.0.142 requesting 10.0.0.1
 Captured 10.0.0.142 requesting 10.0.0.2
@@ -112,7 +114,7 @@ Captured 10.0.0.142 requesting 10.0.0.214
 Captured e4:92:bf:59:4b:e7 responding 10.0.0.107
 Captured e4:92:bf:59:4b:c1 responding 10.0.0.214
 Captured 10.0.0.142 requesting [19:25:25]
-[19:25:39] Writing output.
+[19:55:39] Writing output.
 Discovered total 8 hosts and 6 FQDNs
 ```
 Do the above but three times and only print found IPs to CLI and output to file
