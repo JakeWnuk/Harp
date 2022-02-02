@@ -172,15 +172,14 @@ class Harp:
             if type(cidr_var) == list:
                 random.shuffle(cidr_var)
                 for cidr in cidr_var:
-                    resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr)), timeout=4, verbose=0, inter=pkt_interval)
-                    time.sleep(0.1)
+                    resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr)), timeout=2, verbose=0, inter=pkt_interval)
+                    time.sleep(random.uniform(0, pkt_interval)) # for printing output
                     message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr), word=True)}', stat=True)
                     for h in resp:
                         hosts.loc[hosts.shape[0]] = [h[1].psrc, h[1].hwsrc]
-                    time.sleep(random.uniform(0, 0.2))
             # if its a CIDR string
             elif type(cidr_var) == str:
-                resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr_var)), timeout=4, verbose=0, inter=pkt_interval)
+                resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr_var)), timeout=2, verbose=0, inter=pkt_interval)
                 message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr_var), word=True)}', stat=True)
                 for h in resp:
                     hosts.loc[hosts.shape[0]] = [h[1].psrc, h[1].hwsrc]
@@ -309,7 +308,7 @@ if __name__ == '__main__':
                         help="Only performs ARP scans and ignores fetching FQDN.")
     parser.add_argument("-c", "--cycles", action="store", default=1, type=int,
                         help="Number of cycles to repeat.")
-    parser.add_argument("-w", "--wait", action="store", default=30, type=int,
+    parser.add_argument("-w", "--wait", action="store", default=60, type=int,
                         help="Minutes keep the listener open and spread scans throughout (if enabled).")
     parser.add_argument("-q", "--quiet", action="store_true", default=False,
                         help="Hides banner and only prints found IPs to CLI.")
