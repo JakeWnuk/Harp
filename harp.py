@@ -168,7 +168,7 @@ class Harp:
             if type(cidr_var) == list:
                 random.shuffle(cidr_var)
                 for cidr in cidr_var:
-                    resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr)), timeout=4, verbose=0, inter=1.2)
+                    resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr)), timeout=4, verbose=0, inter=0.8)
                     time.sleep(0.1)
                     message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr), word=True)}', stat=True)
                     for h in resp:
@@ -176,7 +176,7 @@ class Harp:
                     time.sleep(sleep_interval + random.uniform(0, 2))
             # if its a CIDR string
             elif type(cidr_var) == str:
-                resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr_var)), timeout=4, verbose=0, inter=1.2)
+                resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr_var)), timeout=4, verbose=0, inter=0.8)
                 message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr_var), word=True)}', stat=True)
                 for h in resp:
                     hosts.loc[hosts.shape[0]] = [h[1].psrc, h[1].hwsrc]
