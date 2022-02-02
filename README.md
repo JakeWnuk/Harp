@@ -2,7 +2,9 @@
  Harp
  </h1>
 
-  CLI based internal network discovery tool using passive and active ARP methods. **Harp** is designed to enumerate private IPv4 ranges with ARP sweeps then sleep and capture ARP requests passively to gather hosts. Found hosts can optionally be searched for their FQDNs and aims to only lookup each host once. **Harp** can be ran as a listener or as a scanner with the ability to scan then passively enumerate repeatedly. Input can be read from `-i` or from `stdin` and formats include: a CIDR, list of CIDRs or a list of IPs. Output is stored within a DataFrame and is automatically loaded from the output directory as a database between runs. 
+  CLI based internal network discovery tool using passive and active ARP methods. **Harp** is designed to enumerate private IPv4 ranges with ARP by setting up an ARP listener for a determined time then slowly ARP scanning input ranges over the given time. CIDR input is reduced and randomized when scanning and time between requests is randomized. 
+
+  Found hosts can optionally be searched for their FQDNs and aims to only lookup each host once. **Harp** can be ran as a listener or as a scanner and listener with the ability to run repeatedly. Input can be read from `-i` or from `stdin` and formats include: a CIDR, list of CIDRs or a list of IPs. Output is stored within a DataFrame and is automatically loaded from the output directory as a database between runs. 
 
   ## Getting Started
 
@@ -27,7 +29,7 @@ optional arguments:
   -s, --suppress        Only performs ARP scans and ignores fetching FQDN.
   -c CYCLES, --cycles CYCLES
                         Number of cycles to repeat.
-  -w WAIT, --wait WAIT  Minutes to wait between cycles.
+  -w WAIT, --wait WAIT  Minutes keep the listener open and spread scans throughout (if enabled).
   -q, --quiet           Hides banner and only prints found IPs to CLI.
   -l, --listen          Skips all active scans and only starts the listener.
 ```
@@ -51,11 +53,11 @@ cat cidrs.txt | python3 harp.py
 ```
 
 
-Do ARP scan of range and fetch FQDN of found hosts
+Do ARP scan of range, passively listen for ARP requests while scanning, and fetch FQDN of found hosts
 ```
 python3 harp.py -i 10.0.0.0/24
 ```
-Do ARP scan of range but do not fetch FQDN of found hosts
+Do ARP scan of range, passively listen for ARP requests while scanning, but do not fetch FQDN of found hosts
 ```
 python3 harp.py -i 10.0.0.0/24 -s
 ```
@@ -63,92 +65,59 @@ Do not do ARP scan but passively listen for ARP traffic and capture hosts for 30
 ```
 python3 harp.py -l -w 30
 ```
-Do ARP scan on input range then print (and load) dataframe to output directory
+Do ARP scan on input range while passively listening for ARP traffic aiming for 1 minute of listening and spread the scans over 1 minute then repeat 1 time.
 ```
-python3 harp.py -i 10.0.0.0/24 -o ./testing/
-```
-Do ARP scan on input range then passively listen for ARP traffic and capture hosts for 1 minute two times then print (and load) dataframe to output directory
-```
-python3 harp.py -i 10.0.0.0/24 -w 1 -c 2 -o ./testing/
-
+harp.py -i 10.0.0.0/29 -w 1
  ▄ .▄ ▄▄▄· ▄▄▄   ▄▄▄·
 ██▪▐█▐█ ▀█ ▀▄ █·▐█ ▄█
 ██▀▐█▄█▀▀█ ▐▀▀▄  ██▀·
 ██▌▐▀▐█ ▪▐▌▐█•█▌▐█▪·•
 ▀▀▀ · ▀  ▀ .▀  ▀.▀
-Loaded output file with 14 records
-[22:21:06] Starting ARP scan...
-Starting 10.0.0.0/24
-Found 14 live hosts in 10.0.0.0/24
-[22:21:15] Writing output.
-Discovered total 16 hosts and 13 FQDNs.
-[22:21:15] Starting ARP Sniffing...
-Starting ARP capture for 1 minutes...
-Captured 10.0.0.1 requesting 10.0.0.32
-Captured 10.0.0.32 requesting 10.0.0.1
-Captured e0:b4:64:dc:06:e9 responding 10.0.0.32
-Captured 10.0.0.32 requesting 10.0.0.3
-Captured 10.0.0.3 requesting 10.0.0.32
-Captured 10.0.0.1 requesting 10.0.0.32
-Captured 10.0.0.32 requesting 10.0.0.1
-Captured e0:b4:64:dc:06:e9 responding 10.0.0.142
-Captured 10.0.0.32 requesting 10.0.0.3
-Captured 10.0.0.3 requesting 10.0.0.32
-[22:22:27] Starting Cycle 1/2
-[22:22:27] Starting ARP scan...
-Starting 10.0.0.0/24
-Found 11 live hosts in 10.0.0.0/24
-[22:22:31] Starting ARP Sniffing...
-Starting ARP capture for 1 minutes...
-Captured 10.0.0.1 requesting 10.0.0.32
-Captured 10.0.0.32 requesting 10.0.0.1
-Captured 10.0.0.154 requesting 10.0.0.107
-Captured e0:b4:64:dc:06:e9 responding 10.0.0.32
-Captured 10.0.0.154 requesting 10.0.0.214
-Captured 10.0.0.115 requesting 10.0.0.107
-Captured 10.0.0.32 requesting 10.0.0.3
-Captured 10.0.0.3 requesting 10.0.0.32
-Captured 10.0.0.134 requesting 10.0.0.1
-Captured e0:b4:64:dc:06:e9 responding 10.0.0.142
-Captured 10.0.0.1 requesting 10.0.0.32
-Captured 10.0.0.32 requesting 10.0.0.1
-Captured 10.0.0.32 requesting 10.0.0.3
-Captured 10.0.0.3 requesting 10.0.0.32
-Found 1 new hosts and 1 new FQDNs.
-[22:23:44] Writing output.
-Discovered total 17 hosts and 14 FQDNs.
-[22:23:44] Starting Cycle 2/2
-[22:23:44] Starting ARP scan...
-Starting 10.0.0.0/24
-Found 8 live hosts in 10.0.0.0/24
-[22:23:48] Starting ARP Sniffing...
-Starting ARP capture for 1 minutes...
-Captured 0.0.0.0 requesting 10.0.0.69
-Captured 0.0.0.0 requesting 10.0.0.69
-Captured 0.0.0.0 requesting 10.0.0.69
-Captured 10.0.0.69 requesting 10.0.0.69
-Captured e0:b4:64:dc:06:e9 responding 10.0.0.32
-Captured 10.0.0.69 requesting 10.0.0.69
-Captured 10.0.0.69 requesting 10.0.0.69
-Captured 10.0.0.32 requesting 10.0.0.3
-Captured e0:b4:64:dc:06:e9 responding 10.0.0.142
-Captured 10.0.0.3 requesting 10.0.0.32
-Captured 10.0.0.1 requesting 10.0.0.32
-Captured 10.0.0.32 requesting 10.0.0.1
-Captured 10.0.0.115 requesting 10.0.0.107
-Captured 10.0.0.115 requesting 10.0.0.214
-Captured 10.0.0.154 requesting 10.0.0.107
-Captured e0:b4:64:dc:06:e9 responding 10.0.0.32
-Captured 10.0.0.154 requesting 10.0.0.214
-Captured 10.0.0.32 requesting 10.0.0.3
-Captured 10.0.0.3 requesting 10.0.0.32
-Found 1 new hosts and 1 new FQDNs.
-[22:24:54] Writing output.
-Discovered total 18 hosts and 15 FQDNs.
+Reducing input to /29 subnets...
+Loaded output file with 1 records
+[19:24:12] Starting Cycle 1/1
+[19:24:12] Starting ARP Sniffing...
+Starting ARP capture for ~1 minutes...
+Reducing input to /29 subnets...
+[19:24:12] Starting ARP scan...
+Time between subnet scans will be 60.0 seconds.
+Captured 10.0.0.142 requesting 10.0.0.0
+Captured 10.0.0.142 requesting 10.0.0.1
+Captured 10.0.0.142 requesting 10.0.0.2
+Captured 10.0.0.142 requesting 10.0.0.3
+Captured 10.0.0.142 requesting 10.0.0.4
+Captured f6:92:bf:5c:3a:7c responding 10.0.0.1
+Captured 10.0.0.142 requesting 10.0.0.5
+Captured 10.0.0.142 requesting 10.0.0.6
+Captured 10.0.0.142 requesting 10.0.0.7
+Captured b8:27:eb:55:d1:38 responding 10.0.0.5
+Captured 98:8d:46:87:41:4a responding 10.0.0.4
+Found 3 live hosts in 10.0.0.0/29
+Captured 10.0.0.1 requesting 10.0.0.142
+Captured a4:e4:64:dc:06:d4 responding 10.0.0.142
+Captured 10.0.0.146 requesting 10.0.0.142
+Captured a4:e4:64:dc:06:d4 responding 10.0.0.142
+Captured 10.0.0.142 requesting 10.0.0.4
+Captured 98:8d:46:87:41:4a responding 10.0.0.4
+Captured 10.0.0.142 requesting 10.0.0.214
+Captured 10.0.0.142 requesting 10.0.0.107
+Captured e4:92:bf:59:4b:e7 responding 10.0.0.107
+Captured e4:92:bf:59:4b:c1 responding 10.0.0.214
+Captured 10.0.0.142 requesting 10.0.0.4
+Captured 98:8d:46:87:41:4a responding 10.0.0.4
+Captured 10.0.0.1 requesting 10.0.0.142
+Captured a4:e4:64:dc:06:d4 responding 10.0.0.142
+Captured 10.0.0.142 requesting 10.0.0.107
+Captured 10.0.0.142 requesting 10.0.0.214
+Captured e4:92:bf:59:4b:e7 responding 10.0.0.107
+Captured e4:92:bf:59:4b:c1 responding 10.0.0.214
+Captured 10.0.0.142 requesting [19:25:25]
+[19:25:39] Writing output.
+Discovered total 8 hosts and 6 FQDNs
 ```
-Do the above but only print found IPs to CLI and output to file
+Do the above but three times and only print found IPs to CLI and output to file
 ```
-python3 harp.py -i 10.0.0.0/24 -w 30 -c 2 -o ./testing/ -q
+python3 harp.py -i 10.0.0.0/24 -w 30 -c 3 -o ./testing/ -q
   10.0.0.1
   10.0.0.5
 10.0.0.32

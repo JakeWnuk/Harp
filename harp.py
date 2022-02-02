@@ -77,6 +77,25 @@ def transform_cidr(ip_var):
         exit()
 
 
+def reduce_cidr(cidr_list, nprefix=29):
+    """
+    Reduces a list of CIDR values to smaller subnets
+    :param cidr_list: a list of CIDR values
+    :param nprefix: the new prefix for subnet
+    :return: a list of reduces CIDRs
+    """
+    message(f'Reducing input to {message("/" + str(nprefix), word=True)} subnets...', stat=True)
+    output_lst = []
+    for line in cidr_list:
+        try:
+            for subnet in ipaddress.ip_network(line.strip(), False).subnets(new_prefix=nprefix):
+                output_lst.append(format(subnet))
+        except ValueError as e:
+            message(f'Input already reduced skipping...', stat=True)
+            return cidr_list
+    return output_lst
+
+
 class Harp:
     def __init__(self, in_var, do_suppress, sleep_min, listen_mode):
         self.in_var = in_var
@@ -96,10 +115,6 @@ class Harp:
             self.hosts_df = pd.concat([self.hosts_df, out_df])
             self.print_output()
             exit()
-        else:
-            out_df = self.run(in_var, do_suppress)
-            self.hosts_df = pd.concat([self.hosts_df, out_df])
-            self.print_output()
 
     def run(self, in_var, do_suppress):
         """
@@ -109,10 +124,12 @@ class Harp:
         return: pd.DataFrame with only new results not in self.hosts_df
         """
         input_cidr = transform_cidr(in_var)
+        input_cidr = reduce_cidr(input_cidr)
+
         try:
             hosts_df = self.arp_scan(input_cidr)
-        except OSError:
-            message('Error! Are you root?', title=True)
+        except OSError as e:
+            message(f'{str(e)}! Are you root?', title=True)
             exit()
 
         new_df = self.compare(hosts_df)
@@ -136,8 +153,7 @@ class Harp:
         else:
             return df
 
-    @staticmethod
-    def arp_scan(cidr_var):
+    def arp_scan(self, cidr_var):
         """
         Accepts CIDR string or list of CIDRs
         :param cidr_var: either a str or list containing formatted CIDRs
@@ -146,20 +162,23 @@ class Harp:
         hosts = pd.DataFrame(columns=['IP', 'MAC'])
         message('Starting ARP scan...', title=True)
         try:
+            # sleep interval determined by the number of input
+            sleep_interval = (self.sleep * 60) / len(cidr_var)
+            message(f'Time between subnet scans will be {message(round(sleep_interval, 2), word=True)} seconds.',
+                    stat=True)
             # if its a list of CIDRs
             if type(cidr_var) == list:
                 random.shuffle(cidr_var)
                 for cidr in cidr_var:
-                    message(f'Starting {message(cidr, word=True)}', stat=True)
                     resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr)), timeout=4, verbose=0)
                     message(
                         f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr), word=True)}',
                         stat=True)
                     for h in resp:
                         hosts.loc[hosts.shape[0]] = [h[1].psrc, h[1].hwsrc]
+                    time.sleep(sleep_interval + random.uniform(0, 2))
             # if its a CIDR string
             elif type(cidr_var) == str:
-                message(f'Starting {message(cidr_var, word=True)}', stat=True)
                 resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr_var)), timeout=4, verbose=0)
                 message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr_var), word=True)}',
                         stat=True)
@@ -194,12 +213,9 @@ class Harp:
         """
         message('Writing output.', title=True)
         try:
-            message(
-                f'Discovered total {message(str(len(self.hosts_df)), word=True)} hosts and {message(len(self.hosts_df["FQDN"].loc[~self.hosts_df["FQDN"].isin(["NONE"])]), word=True)} FQDNs.',
-                stat=True)
+            message(f'Discovered total {message(str(len(self.hosts_df)), word=True)} hosts and {message(len(self.hosts_df["FQDN"].loc[~self.hosts_df["FQDN"].isin(["NONE"])]), word=True)} FQDNs.', stat=True)
         except KeyError:
-            message(
-                f'Discovered total {message(str(len(self.hosts_df)), word=True)} hosts.', stat=True)
+            message(f'Discovered total {message(str(len(self.hosts_df)), word=True)} hosts.', stat=True)
         self.hosts_df.to_csv(os.path.join(args.output, 'harp-output.csv'), index=False)
 
     def cycle(self):
@@ -208,19 +224,8 @@ class Harp:
         :return: None
         """
         # run new scan and add new hosts
-        new_df = self.run(self.in_var, self.suppress)
-        self.hosts_df = pd.concat([self.hosts_df, new_df])
         new_sniffed = self.start_sniff()
         self.hosts_df = pd.concat([self.hosts_df, new_sniffed])
-        # print update
-        len_df = pd.concat([new_df, new_sniffed])
-
-        try:
-            message(
-                f'Found {message(str(len(len_df)), word=True)} new hosts and {message(len(len_df["FQDN"].loc[~len_df["FQDN"].isin(["NONE"])]), word=True)} new FQDNs.',
-                stat=True)
-        except KeyError:
-            message(f'Found {message(str(len(len_df)), word=True)} new hosts.', stat=True)
         self.print_output()
 
     def compare(self, df):
@@ -247,10 +252,21 @@ class Harp:
         sniffed_df = pd.DataFrame(columns=['IP', 'MAC'])
         wait_flux = random.uniform(5, 30)
         message(f'Starting ARP Sniffing...', title=True)
-        message(f'Starting ARP capture for {message(str(args.wait), word=True)} minutes...', stat=True)
+        message(f'Starting ARP capture for {message("~" + str(args.wait), word=True)} minutes...', stat=True)
         sniffer = AsyncSniffer(prn=self.arp_monitor_callback, filter="arp", store=1)
         sniffer.start()
-        time.sleep((args.wait * 60) + wait_flux)
+        # maybe here instead a try catch for ctrl + c
+        try:
+            # scan or sleep
+            if not self.listen_mode:
+                out_df = self.run(self.in_var, self.suppress)
+                self.hosts_df = pd.concat([self.hosts_df, out_df])
+                self.print_output()
+            else:
+                time.sleep((args.wait * 60) + wait_flux)
+        except KeyboardInterrupt:
+            message("CTRL + C Pressed! Ending listener...", title=True)
+
         sniffer.stop()
         sniffed_pkt = sniffer.results
 
@@ -278,9 +294,6 @@ class Harp:
         """
         # add finding new stuff to df if it doesnt exist and print
         if ARP in pkt and pkt[ARP].op in (1, 2):
-            resp_src = pkt.sprintf("%ARP.psrc%")
-            resp_dst = pkt.sprintf("%ARP.pdst%")
-
             if pkt[ARP].op == 1:
                 return message("Captured " + message(pkt[ARP].psrc, word=True) + " requesting " + message(pkt[ARP].pdst,
                                                                                                           word=True),
@@ -302,10 +315,10 @@ if __name__ == '__main__':
                         help="Prints and loads CSV files to directory. The default is cwd.")
     parser.add_argument("-s", "--suppress", action="store_true", default=False,
                         help="Only performs ARP scans and ignores fetching FQDN.")
-    parser.add_argument("-c", "--cycles", action="store", default=0, type=int,
+    parser.add_argument("-c", "--cycles", action="store", default=1, type=int,
                         help="Number of cycles to repeat.")
     parser.add_argument("-w", "--wait", action="store", default=15, type=int,
-                        help="Minutes to wait between cycles.")
+                        help="Minutes keep the listener open and spread scans throughout (if enabled).")
     parser.add_argument("-q", "--quiet", action="store_true", default=False,
                         help="Hides banner and only prints found IPs to CLI.")
     parser.add_argument("-l", "--listen", action="store_true", default=False,
@@ -339,14 +352,13 @@ if __name__ == '__main__':
             sys.stdout = open(os.devnull, 'w')
         try:
             input_var = transform_cidr(input_lst)
+            input_var = reduce_cidr(input_var)
         except TypeError:
             message(f'Input is either not a valid CIDR notation or file name.', stat=True)
             exit()
 
         MyHarp = Harp(input_var, args.suppress, args.wait, args.listen)
         for i in range(0, int(args.cycles)):
-            if i == 0:
-                MyHarp.start_sniff()
             message(f'Starting Cycle {message(str(i + 1) + "/" + str(args.cycles), word=True)}', title=True)
             MyHarp.cycle()
 
