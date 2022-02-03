@@ -175,7 +175,7 @@ class Harp:
                 random.shuffle(cidr_var)
                 for cidr in cidr_var:
                     resp, unresp = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(cidr)), timeout=2, verbose=0, inter=pkt_interval)
-                    time.sleep(random.uniform(0, pkt_interval)) # for printing output
+                    time.sleep(random.uniform(0, 0.1)) # for printing output
                     message(f'Found {message(str(len(resp)), word=True)} live hosts in {message(str(cidr), word=True)}', stat=True)
                     for h in resp:
                         hosts.loc[hosts.shape[0]] = [h[1].psrc, h[1].hwsrc]
