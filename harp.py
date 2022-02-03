@@ -3,6 +3,7 @@
 import argparse
 import datetime as dt
 import ipaddress
+from os import stat
 
 import pandas as pd
 from scapy.all import *
@@ -101,6 +102,7 @@ class Harp:
         self.suppress = do_suppress
         self.sleep = sleep_min
         self.listen_mode = listen_mode
+        self.rate = False
 
         # check if it exists in cwd and then read in else make empty
         if os.path.exists(os.path.join(args.output, 'harp-output.csv')):
@@ -161,9 +163,9 @@ class Harp:
         hosts = pd.DataFrame(columns=['IP', 'MAC'])
         message('Starting ARP scan...', title=True)
         try:
-            # sleep interval determined by the number of input
+            # sleep interval determined by the number of input - this is time per sub
             sleep_interval = (self.sleep * 60) / len(cidr_var)
-            # assumes /29 will have 8 addresses - CHANGE IF YOU CHANGE NPREFIX OF REDUCE_CIDR()
+            # assumes /29 will have 8 addresses - CHANGE IF YOU CHANGE NPREFIX OF REDUCE_CIDR() - this is pps
             pkt_interval = sleep_interval / (len(cidr_var) * 8)
             message(f'Reduced input CIDRs to {message(len(cidr_var), word=True)} subnets', stat=True)
             message(f'Switching subnet scans every {message(round(sleep_interval, 2), word=True)} seconds.', stat=True)
@@ -223,6 +225,8 @@ class Harp:
         :return: None
         """
         # run new scan and add new hosts
+        # set self.sleep to new sniffed value
+        self.get_arp_rate()
         new_sniffed = self.start_sniff()
         self.hosts_df = pd.concat([self.hosts_df, new_sniffed])
         self.print_output()
@@ -243,15 +247,37 @@ class Harp:
 
         return c_df
 
+    def get_arp_rate(self):
+        """
+        Sets self.sleep to a dynamic rate determined by start_sniff
+        :return: none
+        """
+        # skip scanning and set the wait time dynamically
+        self.listen_mode = True
+        self.rate = True
+        message('Getting rate of ARP requests for dynamic timing...', title=True)
+        total_pkts = self.start_sniff()
+        pkt_ps = round(total_pkts/(self.sleep*60), 1)
+        message(f'Found ARP Packets Per Second: {message(pkt_ps, word=True)}', stat=True)
+        input_cidr = transform_cidr(self.in_var)
+        input_cidr = reduce_cidr(input_cidr)
+        # assumes /29 will have 8 addresses - CHANGE IF YOU CHANGE NPREFIX OF REDUCE_CIDR()
+        time_per_sub = pkt_ps * (8 * len(input_cidr))
+        new_time_min = round((time_per_sub * len(input_cidr)) / 60, 1)
+        message(f'New estimated scan time will be {message(new_time_min, word=True)}', stat=True)
+        self.sleep = new_time_min
+        # reset vars
+        self.rate = False
+        self.listen_mode = False
+
     def start_sniff(self):
         """
         Function to start ARP listener and record requests then ETL them
         :return: pd.DataFrame
         """
         sniffed_df = pd.DataFrame(columns=['IP', 'MAC'])
-        wait_flux = random.uniform(5, 30)
         message(f'Starting ARP Sniffing...', title=True)
-        message(f'Starting ARP capture for {message("~" + str(args.wait), word=True)} minutes...', stat=True)
+        message(f'Starting ARP capture for {message("~" + str(self.sleep), word=True)} minutes...', stat=True)
         sniffer = AsyncSniffer(prn=self.arp_monitor_callback, filter="arp", store=1)
         sniffer.start()
 
@@ -261,13 +287,17 @@ class Harp:
             self.hosts_df = pd.concat([self.hosts_df, out_df])
             self.print_output()
         else:
-            time.sleep((args.wait * 60) + wait_flux)
+            time.sleep((self.sleep * 60))
         sniffer.stop()
         sniffed_pkt = sniffer.results
 
         for pkt in sniffed_pkt:
             if str(pkt[1].psrc) != '0.0.0.0':
                 sniffed_df.loc[sniffed_df.shape[0]] = [pkt[1].psrc, pkt[1].hwsrc]
+
+        if self.rate:
+            message(f'Returning ARP Request Rate...', title=True)
+            return len(sniffed_pkt)
 
         # check sniffed hosts and add new hosts
         new_sniffed = self.compare(sniffed_df)
@@ -308,8 +338,8 @@ if __name__ == '__main__':
                         help="Only performs ARP scans and ignores fetching FQDN.")
     parser.add_argument("-c", "--cycles", action="store", default=1, type=int,
                         help="Number of cycles to repeat.")
-    parser.add_argument("-w", "--wait", action="store", default=60, type=int,
-                        help="Minutes keep the listener open and spread scans throughout (if enabled).")
+    parser.add_argument("-w", "--wait", action="store", default=4, type=int,
+                        help="Minutes keep the listener open.")
     parser.add_argument("-q", "--quiet", action="store_true", default=False,
                         help="Hides banner and only prints found IPs to CLI.")
     parser.add_argument("-l", "--listen", action="store_true", default=False,
@@ -360,3 +390,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         message("CTRL + C Pressed! Writing output then quiting...", title=True)
         MyHarp.print_output()
+        exit()

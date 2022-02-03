@@ -2,7 +2,7 @@
  Harp
  </h1>
 
-  CLI based internal network discovery tool using passive and active ARP methods. **Harp** is designed to enumerate private IPv4 ranges with ARP by setting up an ARP listener for a determined time then slowly ARP scanning input ranges over the given time. CIDR input is reduced and randomized when scanning and time between requests is randomized. 
+  CLI based internal network discovery tool using passive and active ARP methods. **Harp** is designed to enumerate private IPv4 ranges with ARP by setting up an ARP listener for a determined time then slowly ARP scan input ranges by dynamically capturing the normal rate of ARP packets per second and spreading it out to match. CIDR input is reduced to smaller subnets and randomized when scanning.
 
   Found hosts can optionally be searched for their FQDNs and aims to only lookup each host once. **Harp** can be ran as a listener or as a scanner and listener with the ability to run repeatedly. Input can be read from `-i` or from `stdin` and formats include: a CIDR, list of CIDRs or a list of IPs. Output is stored within a DataFrame and is automatically loaded from the output directory as a database between runs. 
 
@@ -65,9 +65,9 @@ Do not do ARP scan but passively listen for ARP traffic and capture hosts for 30
 ```
 python3 harp.py -l -w 30
 ```
-Do ARP scan on input range while passively listening for ARP traffic aiming for 360 minutes of listening and spread the scans over 360 minutes then repeat 1 time.
+Do ARP scan on input range while passively listening for ARP traffic with 1 minutes of ARP rate monitoring then repeat 1 time.
 ```
-harp.py -i 10.0.0.0/24 -w 360 -c 1
+harp.py -i 10.0.0.0/24 -w 1 -c 1
  ▄ .▄ ▄▄▄· ▄▄▄   ▄▄▄·
 ██▪▐█▐█ ▀█ ▀▄ █·▐█ ▄█
 ██▀▐█▄█▀▀█ ▐▀▀▄  ██▀·
@@ -76,13 +76,32 @@ harp.py -i 10.0.0.0/24 -w 360 -c 1
 Reducing input to /29 subnets...
 Loaded output file with 1 records
 [19:24:12] Starting Cycle 1/1
+[19:24:12] Getting rate of ARP requests for dynamic timing...
 [19:24:12] Starting ARP Sniffing...
-Starting ARP capture for ~360 minutes...
+Starting ARP capture for ~1 minutes...
+Captured 192.168.190.142 requesting 192.168.190.4
+Captured 98:8d:46:87:41:9b responding 192.168.190.4
+Captured 192.168.190.146 requesting 192.168.190.142
+Captured e0:d4:64:dc:06:a9 responding 192.168.190.142
+Captured 192.168.190.1 requesting 192.168.190.142
+Captured e0:d4:64:dc:06:a9 responding 192.168.190.142
+Captured 192.168.190.142 requesting 192.168.190.214
+Captured f4:92:bf:59:4b:c1 responding 192.168.190.214
+Captured 192.168.190.142 requesting 192.168.190.107
+Captured f4:92:bf:59:4b:e7 responding 192.168.190.107
+Captured 192.168.190.142 requesting 192.168.190.4
+Captured 98:8d:46:87:41:9b responding 192.168.190.4
+[19:25:12] Returning ARP Request Rate...
+Found ARP Packets Per Second: 0.2
 Reducing input to /29 subnets...
-[19:24:12] Starting ARP scan...
+New estimated scan time will be 27.3 minutes
+[19:25:35] Starting ARP Sniffing...
+Starting ARP capture for ~27.3 minutes...
+Reducing input to /29 subnets...
+[19:25:35] Starting ARP scan...
 Reduced input CIDRs to 32 subnets
-Switching subnet scans every 675.0 seconds.
-Time between packets will be 2.636719 seconds.
+Switching subnet scans every 51.19 seconds.
+Time between packets will be 0.199951 seconds.
 Captured 10.0.0.142 requesting 10.0.0.0
 Captured 10.0.0.142 requesting 10.0.0.1
 Captured 10.0.0.142 requesting 10.0.0.2
