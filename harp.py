@@ -164,12 +164,12 @@ class Harp:
         message('Starting ARP scan...', title=True)
         try:
             # sleep interval determined by the number of input - this is time per sub
-            sleep_interval = (self.sleep * 60) / len(cidr_var)
+            sec_per_cidr = (self.sleep * 60) / len(cidr_var)
             # assumes /29 will have 8 addresses - CHANGE IF YOU CHANGE NPREFIX OF REDUCE_CIDR() - this is pps
-            pkt_interval = sleep_interval / (len(cidr_var) * 8)
+            pkt_interval = sec_per_cidr / 8
             message(f'Reduced input CIDRs to {message(len(cidr_var), word=True)} subnets', stat=True)
-            message(f'Switching subnet scans every {message(round(sleep_interval, 2), word=True)} seconds.', stat=True)
-            message(f'Time between packets will be {message(round(pkt_interval, 6), word=True)} seconds.', stat=True)
+            message(f'Switching subnet scans every {message(round(sec_per_cidr, 2), word=True)} seconds.', stat=True)
+            message(f'Time between packets will be {message(round(pkt_interval, 2), word=True)} seconds.', stat=True)
             # if its a list of CIDRs
             if type(cidr_var) == list:
                 random.shuffle(cidr_var)
@@ -257,13 +257,13 @@ class Harp:
         self.rate = True
         message('Getting rate of ARP requests for dynamic timing...', title=True)
         total_pkts = self.start_sniff()
-        pkt_ps = round(total_pkts/(self.sleep*60), 1)
-        message(f'Found ARP Packets Per Second: {message(pkt_ps, word=True)}', stat=True)
+        sec_per_pkt = round((self.sleep*60)/total_pkts, 2)
+        message(f'Found {message(sec_per_pkt, word=True)} Seconds Per ARP Packet...', stat=True)
         input_cidr = transform_cidr(self.in_var)
         input_cidr = reduce_cidr(input_cidr)
         # assumes /29 will have 8 addresses - CHANGE IF YOU CHANGE NPREFIX OF REDUCE_CIDR()
-        time_per_sub = pkt_ps * (8 * len(input_cidr))
-        new_time_min = round((time_per_sub * len(input_cidr)) / 60, 1)
+        all_sub_times = sec_per_pkt * (8 * len(input_cidr))
+        new_time_min = round(all_sub_times / 60, 2)
         message(f'New estimated scan time will be {message(new_time_min, word=True)}', stat=True)
         self.sleep = new_time_min
         # reset vars
