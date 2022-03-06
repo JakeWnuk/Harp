@@ -1,2 +1,2 @@
-pandas
-scapy
+pandas>=1.4.1
+scapy>=2.4.5
